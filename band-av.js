@@ -1,15 +1,25 @@
-var currentDate = new Date();
-var currentYear = currentDate.getFullYear();
+// key limitations: 4998 events on a year's sheet, 25 eventconfigs
+
+var spreadsheet = SpreadsheetApp.getActiveSheet();
+var year = Number(spreadsheet.getName().substring(0,4));
 
 const eventColumns = {
-  what: 0,
+  name: 0,
   date: 1,
-  main: 9,
-  backup: 10
+  main: 24,
+  backup: 25
 };  
 
-const dataRange = "A2:K500";
-const configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('eventconfig')
+const eventInfoColumns = {
+  title: 0, 
+  startTime: 1,
+  endTime: 2,
+  allDay: 3
+}
+
+const dataRange = "A3:AG500";
+const eventInfoRange = "A2:Z3";
+const configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('eventconfig');
 const calendarID = configSheet.getRange('G1').getValue();
 
 /* Creates a a tab on the menu called "add to Google Calendar". Each month has a separate button
@@ -17,33 +27,59 @@ to add SC events. */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Add to Google Calendar')
-    .addItem('Add August SC Events', 'createAugustEvents')
-    .addItem('Add September SC Events', 'createSeptemberEvents')
-    .addItem('Add October SC Events', 'createOctoberEvents')
-    .addItem('Add November SC Events', 'createNovemberEvents')
-    .addItem('Add December SC Events', 'createDecemberEvents')
-    .addItem('Add January SC Events', 'createJanuaryEvents')
-    .addItem('Add February SC Events', 'createFebruaryEvents')
-    .addItem('Add March SC Events', 'createMarchEvents')
-    .addItem('Add April SC Events', 'createAprilEvents')
-    .addItem('Add May SC Events', 'createMayEvents')
-    .addItem('Add June SC Events', 'createJuneEvents')
-    .addItem('Add July SC Events', 'createJulyEvents')
+    .addItem('Add August Events', 'createAugustEvents')
+    .addItem('Add September Events', 'createSeptemberEvents')
+    .addItem('Add October Events', 'createOctoberEvents')
+    .addItem('Add November Events', 'createNovemberEvents')
+    .addItem('Add December Events', 'createDecemberEvents')
+    .addItem('Add January Events', 'createJanuaryEvents')
+    .addItem('Add February Events', 'createFebruaryEvents')
+    .addItem('Add March Events', 'createMarchEvents')
+    .addItem('Add April Events', 'createAprilEvents')
+    .addItem('Add May Events', 'createMayEvents')
+    .addItem('Add June Events', 'createJuneEvents')
+    .addItem('Add July Events', 'createJulyEvents')
     .addToUi();
 }
 
-function createAugustEvents() {createEvents(8, currentYear);}
-function createSeptemberEvents() {createEvents(9, currentYear);}
-function createOctoberEvents() {createEvents(10, currentYear);}
-function createNovemberEvents() {createEvents(11, currentYear);}
-function createDecemberEvents() {createEvents(12, currentYear);}
-function createJanuaryEvents() {createEvents(1, currentYear+1);}
-function createFebruaryEvents() {createEvents(2, currentYear+1);}
-function createMarchEvents() {createEvents(3, currentYear+1);}
-function createAprilEvents() {createEvents(4, currentYear+1);}
-function createMayEvents() {createEvents(5, currentYear+1);}
-function createJuneEvents() {createEvents(6, currentYear+1);}
-function createJulyEvents() {createEvents(7, currentYear+1);}
+function createAugustEvents() {createEvents(8, year);}
+function createSeptemberEvents() {createEvents(9, year);}
+function createOctoberEvents() {createEvents(10, year);}
+function createNovemberEvents() {createEvents(11, year);}
+function createDecemberEvents() {createEvents(12, year);}
+function createJanuaryEvents() {createEvents(1, year+1);}
+function createFebruaryEvents() {createEvents(2, year+1);}
+function createMarchEvents() {createEvents(3, year+1);}
+function createAprilEvents() {createEvents(4, year+1);}
+function createMayEvents() {createEvents(5, year+1);}
+function createJuneEvents() {createEvents(6, year+1);}
+function createJulyEvents() {createEvents(7, year+1);}
+
+/* Gets event title, start time, end time, and if it's all day from eventConfig sheet. 
+   Returns an array with objects containing all event info. */
+function getEventInfo() {
+  const eventInfo = configSheet.getRange(eventInfoRange).getValues();
+  let eventsArray = new Array();
+  for (let x = 0; x < eventInfo.length; x++) {
+    var eventInfoTitle = eventInfo[x][eventInfoColumns.title];
+    var eventInfoStart = eventInfo[x][eventInfoColumns.startTime];
+    var eventInfoEnd = eventInfo[x][eventInfoColumns.endTime];
+    var eventInfoAllDay = eventInfo[x][eventInfoColumns.allDay];
+
+    let eventInfoObject = {
+      "title": eventInfoTitle,
+      "startTime": new Date(eventInfoStart),
+      "endTime": new Date(eventInfoEnd),
+      "allDay": eventInfoAllDay
+    }
+    if (eventInfoTitle.length > 0) {
+      eventsArray.push(eventInfoObject);
+    }
+  }
+  return eventsArray;
+}
+
+var eventsArray = getEventInfo();
 
 /* Creates google calendar events for a specified month and year.
 Looks through data of specified data range for "SC" events. Gets names from "Audio"
@@ -52,7 +88,6 @@ Checks if the event has already been created (prevents duplicates from being add
 deletes any existing events at the same time with different information.
 */
 function createEvents(month, year) {
-  const spreadsheet = SpreadsheetApp.getActiveSheet();
   const events = spreadsheet.getRange(dataRange).getValues();
   const calendar = CalendarApp.getCalendarById(calendarID);
 
@@ -60,23 +95,20 @@ function createEvents(month, year) {
   const endCriteria = new Date(year, month, 0);
   endCriteria.setHours(23);
 
-
   for (let x = 0; x < events.length; x++) {
-    var eventName = events[x][eventColumns.what];
-    if (eventName == "SC") {
-      var eventDateStart = new Date(events[x][eventColumns.date]);
-      eventDateStart.setHours(8);
-      eventDateStart.setMinutes(30);
-      var eventDateEnd = new Date(events[x][eventColumns.date]);
-      eventDateEnd.setHours(11);
-      eventDateEnd.setMinutes(30);
+    var eventName = events[x][eventColumns.name];
+    var matchingEvent = eventsArray.find(event => event.title === eventName);
+  
+    if (matchingEvent) {
       var mainPerson = events[x][eventColumns.main];
-      var backupPerson = events[x][eventColumns.backup];
-      var eventTitle = "SC: " + mainPerson + ", " + backupPerson;
+      var backupPerson = events[x][eventColumns.backup];   
+      var eventTitle = eventName + ": " + mainPerson + ", " + backupPerson;
+      var eventDateStart = new Date(events[x][eventColumns.date]);
+      var eventDateEnd = new Date(events[x][eventColumns.date]);
+      
 
-        // check if date falls within the specified month
+      // check if date falls within the specified month
       if (eventDateStart >= startCriteria && eventDateStart <= endCriteria) {
-
         // checks for existing events with the same date/time.
         var existingEvents = calendar.getEvents(eventDateStart, eventDateEnd);
         var eventExists = false;
@@ -91,8 +123,20 @@ function createEvents(month, year) {
         }
 
         if (!eventExists) {
-          calendar.createEvent(eventTitle, eventDateStart, eventDateEnd);
-          Logger.log('Event Created: ' + eventTitle + eventDateStart.toString());
+          if (matchingEvent["allDay"]) {
+            calendar.createAllDayEvent(eventTitle, eventDateStart);
+          }
+
+          else {
+            eventDateStart.setHours(matchingEvent["startTime"].getHours());
+            eventDateStart.setMinutes(matchingEvent["startTime"].getMinutes());
+            eventDateEnd.setHours(matchingEvent["endTime"].getHours());
+            eventDateEnd.setMinutes(matchingEvent["endTime"].getMinutes());
+            calendar.createEvent(eventTitle, eventDateStart, eventDateEnd);
+            Logger.log('Event Created: ' + eventTitle + eventDateStart.toString());
+          }
+          // calendar.createEvent(eventTitle, eventDateStart, eventDateEnd);
+          // Logger.log('Event Created: ' + eventTitle + eventDateStart.toString());
         }
         else{Logger.log('Event already exists: ' + eventTitle + eventDateStart.toString());}
       }
@@ -100,14 +144,15 @@ function createEvents(month, year) {
   }
 }
 
+
 // clears all events. for testing purposes
 function clearEvents() {
-  const spreadsheet = SpreadsheetApp.getActiveSheet();
+  // const spreadsheet = SpreadsheetApp.getActiveSheet();
   const calendar = CalendarApp.getCalendarById(calendarID);
   const events = spreadsheet.getRange(dataRange).getValues();
 
   const earliestDay = events[0][eventColumns.date];
-  const latestDay = new Date(2025, 7, 31);
+  const latestDay = new Date(year + 1, 7, 31);
 
   const createdEvents = calendar.getEvents(
     earliestDay,
@@ -120,5 +165,6 @@ function clearEvents() {
     createdEvent.deleteEvent();
   }
 }
+
 
 
