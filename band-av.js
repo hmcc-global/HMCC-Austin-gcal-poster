@@ -119,8 +119,15 @@ function createEvents(month, year) {
   
     if (matchingEvent) {
       var mainPerson = events[x][eventColumns.main];
-      var backupPerson = events[x][eventColumns.backup];   
-      var eventTitle = eventName + ": " + mainPerson + ", " + backupPerson;
+      var backupPerson = events[x][eventColumns.backup];
+      var eventTitle = `${eventName}: ${mainPerson}, ${backupPerson}`;
+      if (!backupPerson) {
+        if (mainPerson) {
+          eventTitle = `${eventName}: ${mainPerson}`
+        } else {
+          eventTitle = eventName
+        }
+      }
       var eventDateStart = new Date(events[x][eventColumns.date]);
       var eventDateEnd = new Date(events[x][eventColumns.date]);
       
