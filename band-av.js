@@ -130,7 +130,6 @@ function createEvents(month, year) {
         // checks for existing events with the same date/time.
         var existingEvents = calendar.getEvents(eventDateStart, eventDateEnd);
         var eventExists = false;
-        var pointExists = false;
         const pointPerson = events[x][pointColIndex];
         const pointTitle = eventName + " Point: " + pointPerson;
 
