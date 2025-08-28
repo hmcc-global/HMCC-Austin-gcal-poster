@@ -1,11 +1,13 @@
 // key limitations: 4998 events on a year's sheet, 25 eventconfigs
+// column configuration is hardcoded. So changes to the columns will break the script
+// point person is always made at the same time for now, regardless of what event it's for
 
 var spreadsheet = SpreadsheetApp.getActiveSheet();
 var year = Number(spreadsheet.getName().substring(0,4));
 
 const eventColumns = {
-  name: 0,
-  date: 1,
+  name: 1,
+  date: 2,
   main: 24,
   backup: 25
 };  
@@ -81,6 +83,22 @@ function getEventInfo() {
 
 var eventsArray = getEventInfo();
 
+// Converts column letter to index (e.g., AE => 31)
+function colLetterToIndex(col) {
+  let index = 0;
+  for (let i = 0; i < col.length; i++) {
+    index *= 26;
+    index += col.charCodeAt(i) - 64;
+  }
+  return index;
+}
+
+// --- Point Person Events ---
+const pointColLetter = configSheet.getRange('J2').getValue();
+const pointStartTime = configSheet.getRange('K2').getValue(); // returns Date object with time
+const pointEndTime = configSheet.getRange('L2').getValue();   // same
+const pointColIndex = colLetterToIndex(pointColLetter) - 1; // 0-based
+
 /* Creates google calendar events for a specified month and year.
 Looks through data of specified data range for "SC" events. Gets names from "Audio"
 and "Visual" column. Currently, start time = 8:30am and end time = 11:30am.
@@ -112,13 +130,13 @@ function createEvents(month, year) {
         // checks for existing events with the same date/time.
         var existingEvents = calendar.getEvents(eventDateStart, eventDateEnd);
         var eventExists = false;
+        var pointExists = false;
+        const pointPerson = events[x][pointColIndex];
+        const pointTitle = eventName + " Point: " + pointPerson;
+
         for(let j = 0; j < existingEvents.length; j++) {
           if (existingEvents[j].getTitle() == eventTitle) {
             eventExists = true;
-          }
-          else {
-            existingEvents[j].deleteEvent();
-            Logger.log('Event Deleted: ' + existingEvents[j].getTitle() + existingEvents[j].getStartTime().toString());
           }
         }
 
@@ -139,6 +157,31 @@ function createEvents(month, year) {
           // Logger.log('Event Created: ' + eventTitle + eventDateStart.toString());
         }
         else{Logger.log('Event already exists: ' + eventTitle + eventDateStart.toString());}
+
+        if (pointPerson) {
+          const pointStart = new Date(events[x][eventColumns.date]);
+          const pointEnd = new Date(pointStart);
+          pointStart.setHours(8, 0);
+          pointEnd.setHours(8, 30);
+
+          const pointEvents = calendar.getEvents(pointStart, pointEnd);
+          let pointExists = false;
+          for (let j = 0; j < pointEvents.length; j++) {
+            if (pointEvents[j].getTitle() === pointTitle) {
+              pointExists = true;
+            } else {
+              pointEvents[j].deleteEvent();
+              Logger.log('Point Event Deleted: ' + pointEvents[j].getTitle());
+            }
+          }
+
+          if (!pointExists) {
+            calendar.createEvent(pointTitle, pointStart, pointEnd);
+            Logger.log('Point Event Created: ' + pointTitle);
+          } else {
+            Logger.log('Point Event Already Exists: ' + pointTitle);
+          }
+        }
       }
     }
   }
