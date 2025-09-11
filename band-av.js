@@ -81,7 +81,7 @@ function getEventConfig() {
   return eventsArray;
 }
 
-var eventsArray = getEventConfig();
+var eventConfigArray = getEventConfig();
 
 // Converts column letter to index (e.g., AE => 31)
 function colLetterToIndex(col) {
@@ -115,7 +115,7 @@ function createEvents(month, year) {
 
   for (let x = 0; x < events.length; x++) {
     var eventName = events[x][eventColumns.name];
-    var matchingEvent = eventsArray.find(event => event.title === eventName);
+    var matchingEvent = eventConfigArray.find(event => event.title === eventName);
   
     if (matchingEvent) {
       var mainPerson = events[x][eventColumns.main];
