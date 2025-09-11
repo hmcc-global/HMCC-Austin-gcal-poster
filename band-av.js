@@ -20,7 +20,7 @@ const eventInfoColumns = {
 }
 
 const dataRange = "A3:AG500";
-const eventInfoRange = "A2:Z3";
+const eventConfigRange = "A2:Z3";
 const configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('eventconfig');
 const calendarID = configSheet.getRange('G1').getValue();
 
@@ -59,29 +59,29 @@ function createJulyEvents() {createEvents(7, year+1);}
 
 /* Gets event title, start time, end time, and if it's all day from eventConfig sheet. 
    Returns an array with objects containing all event info. */
-function getEventInfo() {
-  const eventInfo = configSheet.getRange(eventInfoRange).getValues();
+function getEventConfig() {
+  const eventConfig = configSheet.getRange(eventConfigRange).getValues();
   let eventsArray = new Array();
-  for (let x = 0; x < eventInfo.length; x++) {
-    var eventInfoTitle = eventInfo[x][eventInfoColumns.title];
-    var eventInfoStart = eventInfo[x][eventInfoColumns.startTime];
-    var eventInfoEnd = eventInfo[x][eventInfoColumns.endTime];
-    var eventInfoAllDay = eventInfo[x][eventInfoColumns.allDay];
+  for (let x = 0; x < eventConfig.length; x++) {
+    var eventInfoTitle = eventConfig[x][eventInfoColumns.title];
+    var eventInfoStart = eventConfig[x][eventInfoColumns.startTime];
+    var eventInfoEnd = eventConfig[x][eventInfoColumns.endTime];
+    var eventInfoAllDay = eventConfig[x][eventInfoColumns.allDay];
 
-    let eventInfoObject = {
+    let eventConfigObject = {
       "title": eventInfoTitle,
       "startTime": new Date(eventInfoStart),
       "endTime": new Date(eventInfoEnd),
       "allDay": eventInfoAllDay
     }
     if (eventInfoTitle.length > 0) {
-      eventsArray.push(eventInfoObject);
+      eventsArray.push(eventConfigObject);
     }
   }
   return eventsArray;
 }
 
-var eventsArray = getEventInfo();
+var eventsArray = getEventConfig();
 
 // Converts column letter to index (e.g., AE => 31)
 function colLetterToIndex(col) {
