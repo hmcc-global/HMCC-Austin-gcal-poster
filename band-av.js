@@ -119,15 +119,8 @@ function createEvents(month, year) {
   
     if (matchingEvent) {
       var mainPerson = events[x][eventColumns.main];
-      var backupPerson = events[x][eventColumns.backup];
-      var eventTitle = `${eventName}: ${mainPerson}, ${backupPerson}`;
-      if (!backupPerson) {
-        if (mainPerson) {
-          eventTitle = `${eventName}: ${mainPerson}`
-        } else {
-          eventTitle = eventName
-        }
-      }
+      var backupPerson = events[x][eventColumns.backup];   
+      var eventTitle = eventName + ": " + mainPerson + ", " + backupPerson;
       var eventDateStart = new Date(events[x][eventColumns.date]);
       var eventDateEnd = new Date(events[x][eventColumns.date]);
       
@@ -135,13 +128,14 @@ function createEvents(month, year) {
       // check if date falls within the specified month
       if (eventDateStart >= startCriteria && eventDateStart <= endCriteria) {
         // checks for existing events with the same date/time.
-        var existingEvents = calendar.getEvents(eventDateStart, eventDateEnd);
+        var existingEvents = calendar.getEvents(startCriteria, endCriteria);
+
         var eventExists = false;
         const pointPerson = events[x][pointColIndex];
         const pointTitle = eventName + " Point: " + pointPerson;
 
         for(let j = 0; j < existingEvents.length; j++) {
-          if (existingEvents[j].getTitle() == eventTitle) {
+          if (existingEvents[j].getTitle() === eventTitle) {
             eventExists = true;
           }
         }
@@ -214,6 +208,4 @@ function clearEvents() {
     createdEvent.deleteEvent();
   }
 }
-
-
 
